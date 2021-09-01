@@ -1,0 +1,319 @@
+Public Class Form1
+
+    Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click '点群の変換処理
+
+        Dim fso As Object
+        fso = CreateObject("Scripting.FileSystemObject")
+
+        Dim buf As String
+        Dim Arr() As String　'CSVファイル名の配列
+        Dim j As Long
+        Dim para As Long = 16　'並列処理数(可変)
+
+        j = 0
+        buf = Dir(TextBox3.Text & "\*.csv")　'TextBox3に記載されたフォルダ内の内、”csv”ファイルを抽出する。(拡張子可変)
+
+        Do While buf <> ""　'ファイル名を配列に格納
+            j = j + 1
+            ReDim Preserve Arr(j)
+            Arr(j) = buf
+            Console.WriteLine(buf)
+            buf = Dir()
+        Loop
+
+
+        Dim count As Long
+        count = Arr.Length　'CSVファイル数
+
+        Dim pos As String
+
+        Dim k As Long
+        Dim l As Long
+
+        k = count \ para 'ファイル数を並行処理数で割ったもの、何度繰り返し処理をすればいいかの変数
+
+        '色に関する処理ここから-----------------------------------------------------------------------------------------------------------------------------------
+
+
+        'With OpenFileDialog1　'色相ファイルのオープンダイアログ
+        '.Multiselect = False
+        'itle = "色相設定ファイルの入力"
+        '.Filter = "csvファイル|*.csv"
+        'End With
+
+        'Dim inputFile2 As Object
+        'Dim lineStr2 As String
+        'Dim SP2() As String
+        'Dim rname As String
+        'Dim m As Long
+        'Dim n As Long
+        'm = 0
+        'Dim CArr(1, 1) As Double　'RGBの設定値の配列
+
+        'If OpenFileDialog1.ShowDialog() = Windows.Forms.DialogResult.OK Then　'RGB設定を配列に格納する処理
+        'rname = OpenFileDialog1.FileName
+        'inputFile2 = fso.OpenTextFile(rname, 1, False, 0)
+
+        'Dim st = New IO.StreamReader(rname)
+        'Dim LineCount As Integer = UBound(st.ReadToEnd.Split(Chr(13)))
+
+        'ReDim CArr(LineCount, 3)
+
+        'For m = 1 To LineCount
+
+        'lineStr2 = inputFile2.ReadLine
+        'SP2 = lineStr2.Split(",")
+        'For n = 0 To 3
+
+        'CArr(m, n) = SP2(n)
+        'Console.WriteLine(CArr(m, n))
+        'Next n
+
+        'Next m
+
+
+        'End If
+
+        '色に関する処理ここまで-----------------------------------------------------------------------------------------------------------------------------------
+
+        With OpenFileDialog2　'補間済みPOSのオープンダイアログ
+            .Multiselect = False
+            .Title = "POSの入力"
+            .Filter = "posファイル|*.pos"
+        End With
+
+        Dim lineStr1 As String
+        Dim SP1() As String
+        Dim inputFile1 As Object
+        Dim PArr(,) As String
+        Dim TempArr() As String
+
+        ProgressBar1.Minimum = 0
+        ProgressBar1.Maximum = count
+
+        If OpenFileDialog2.ShowDialog() = Windows.Forms.DialogResult.OK Then　'補間済みPOSを配列に格納する処理
+
+            pos = OpenFileDialog2.FileName
+            inputFile1 = fso.OpenTextFile(pos, 1, False, 0)
+
+            Dim rt = New IO.StreamReader(pos)
+            Dim LineCount1 As Integer = UBound(rt.ReadToEnd.Split(Chr(13)))
+            Console.WriteLine(LineCount1)
+
+            ReDim PArr(LineCount1, 10)
+
+            For m = 1 To LineCount1
+
+                lineStr1 = inputFile1.ReadLine
+                SP1 = lineStr1.Split("	") 'POSの区切り文字はココ、可変
+                'Console.WriteLine(SP1)
+                For n = 0 To 10
+                    If n = 1 Or n = 2 Then
+                        TempArr = SP1(n).Split(New [Char]() {"N", "d", "m", "s", "E"})
+                        PArr(m, n) = CStr(CDbl(TempArr(1)) + CDbl(TempArr(2)) / 60 + CDbl(TempArr(3)) / 60 / 60)
+                    Else
+                        PArr(m, n) = SP1(n)
+                    End If
+
+                    'Console.WriteLine(PArr(m, n))
+                Next n
+
+            Next m
+
+        End If
+
+
+
+        For l = 1 To k　'並列処理。処理内容は別のプロシージャ
+            Parallel.For((l - 1) * para + 1, para * l + 1,
+                 Sub(i)
+                     'この中が並列処理される
+                     Console.WriteLine(i)
+                     Dim fname As String = Arr(i)
+
+                     Call Process(PArr, fname)　'POSの中身の配列、点群CSVファイル名、路面高毎のRGB配列が引数
+
+                 End Sub
+        )
+            ProgressBar1.Value = l * para
+
+        Next l
+
+
+
+        Parallel.For((l - 1) * para + 1, count,　'並列処理。並列処理数で割った時のあまり分はこの中で処理する。処理内容は別のプロシージャ
+                Sub(i)
+                    'この中が並列処理される
+                    Console.WriteLine(i)
+                    Dim fname As String = Arr(i)
+
+                    Call Process(PArr, fname)　'POSの中身の配列、点群CSVファイル名、路面高毎のRGB配列が引数
+
+                End Sub
+        )
+
+        ProgressBar1.Value = count
+
+
+        MessageBox.Show("End")
+
+        '＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿終了処理
+
+        fso = Nothing
+
+    End Sub
+
+
+    Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click　'POSを補完するプロシージャ
+
+        Dim fso As Object
+        fso = CreateObject("Scripting.FileSystemObject")
+        Dim pos As String
+        Dim inputFile As Object
+        Dim lineStr As String
+        Dim SP() As String
+        Dim time As Double
+        Dim hight As Double
+        Dim i As Long
+        Dim a As Long
+        Dim time10 As Double
+        Dim hight10 As Double
+        Dim outputFile As Object
+        outputFile = fso.OpenTextFile(TextBox2.Text & "\Modified.POS", 2, True)
+
+
+
+        With OpenFileDialog2
+            .Multiselect = False
+            .Title = "POSの入力"
+            .Filter = "posファイル|*.pos"
+        End With
+
+        If OpenFileDialog2.ShowDialog() = Windows.Forms.DialogResult.OK Then
+
+            pos = OpenFileDialog2.FileName
+            inputFile = fso.OpenTextFile(pos, 1, False, 0)
+
+            Do Until inputFile.AtEndOfStream
+
+                lineStr = inputFile.ReadLine
+
+                SP = lineStr.Split(" ")
+
+
+
+                i = i + 1
+
+                If i <> 1 Then
+                    time10 = CDbl(SP(0)) - time
+                    hight10 = CDbl(SP(3)) - hight
+
+
+                    For a = 1 To 19
+
+                        outputFile.WriteLine(time + (time10 / 20) * a & " " & hight + (hight10 / 20) * a)
+                        Console.WriteLine(time + (time10 / 20) * a & " " & hight + (hight10 / 20) * a)
+                    Next a
+
+                End If
+
+                outputFile.WriteLine(SP(0) & " " & SP(3))
+                Console.WriteLine(SP(0) & " " & SP(3))
+
+                time = CDbl(SP(0))
+                hight = CDbl(SP(3))
+
+
+
+            Loop
+
+        End If
+        MessageBox.Show("End")
+
+    End Sub
+
+    Sub Process(PArr(,) As String, fname As String)　'点群CSVに路面高からRGB情報を付与するプロシージャ
+        Dim fso As Object
+        fso = CreateObject("Scripting.FileSystemObject")
+
+        Dim outputFile As Object
+        Dim inputFile As Object
+        Dim lineStr As String
+        Dim SP() As String
+
+        Dim hight As Double
+
+        'Dim R As Double
+        'Dim G As Double
+        'Dim B As Double
+
+        'Dim threshold As Long = CInt(TextBox4.Text)
+        'Dim Magni As Double
+        'Dim Ref As Double = CDbl(TextBox1.Text) '反射強度非反映率
+
+        'Dim m As Long
+        Dim n As Long
+
+        inputFile = fso.OpenTextFile(TextBox3.Text & "\" & fname, 1, False, 0)　'
+        outputFile = fso.OpenTextFile(TextBox2.Text & "\" & fname, 2, True)
+
+        lineStr = inputFile.ReadLine
+        SP = lineStr.Split(",")
+
+        'Dim LineCount As Long
+        Dim LineCount1 As Long
+        'LineCount = ((CArr.Length) / 4) - 1
+        LineCount1 = ((PArr.Length) / 2) - 1
+
+        n = 1
+        Do Until inputFile.AtEndOfStream
+
+            If CDbl(PArr(n, 0)) > CDbl(SP(4)) Then 'POSと点群CSVのGPSTimeを比較、POSのGPSTimeの方が大きい場合のみ処理を行う
+
+                lineStr = inputFile.ReadLine
+                SP = lineStr.Split(",")
+
+                hight = CDbl(SP(2)) - CDbl(PArr(n, 3))
+
+                'RGBを編集しない場合は不要＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
+                'For m = 1 To LineCount
+
+                'If CArr(m, 0) < hight Then
+                'R = CArr(m, 1)
+                'G = CArr(m, 2)
+                'B = CArr(m, 3)
+                'Exit For
+                'End If
+
+                'If m = LineCount Then
+                'R = CArr(m, 1)
+                'G = CArr(m, 2)
+                'B = CArr(m, 3)
+                'End If
+
+                'Next m
+
+
+                'If (CDbl(SP(8)) * Ref) / threshold >= 1 Then
+                'Magni = 1
+                'Else
+                'Magni = (CDbl(SP(8)) * Ref) / threshold
+                'End If
+
+                '＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
+                outputFile.WriteLine(SP(0) & "," & SP(1) & "," & hight & "," & SP(3) & "," & SP(4))
+                'outputFile.WriteLine(SP(0) & "," & SP(1) & "," & SP(2) & "," & SP(3) & "," & SP(4) & "," & SP(5) & "," & SP(6) & "," & SP(7) & "," & SP(8) & "," & CDbl(R * Magni) & "," & CDbl(G * Magni) & "," & CDbl(B * Magni))
+                '↑出力は可変
+            Else
+
+                n = n + 1
+
+            End If
+
+        Loop
+
+        fso = Nothing
+
+    End Sub
+
+End Class
