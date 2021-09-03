@@ -54,7 +54,6 @@
             pos = OpenFileDialog2.FileName
             inputFile1 = fso.OpenTextFile(pos, 1, False, 0)
 
-            'Dim rt = New IO.StreamReader(pos)
 
             Dim LineCount1 As Integer = fso.OpenTextFile(pos, 8).Line   'UBound(rt.ReadToEnd.Split(Chr(13)))
             Console.WriteLine(LineCount1)
@@ -320,7 +319,7 @@
                 '以上平滑化処理______________________________________________________________________________________________________
 
 
-                outputFile.WriteLine(SP(0) & "," & SP(1) & "," & HightDif & "," & SP(3) & "," & SP(4) & "," & hight & "," & HightDif & "," & Dist & "," & Xr & "," & angle & "," & flag)
+                outputFile.WriteLine(SP(0) & "," & SP(1) & "," & HightDif & "," & SP(3) & "," & SP(4) & "," & hight & "," & "," & Dist & "," & Xr & "," & angle & "," & flag)
 
 
                 '↑出力は可変
