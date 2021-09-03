@@ -318,9 +318,9 @@
                 End If
                 '以上平滑化処理______________________________________________________________________________________________________
 
-
-                outputFile.WriteLine(SP(0) & "," & SP(1) & "," & HightDif & "," & SP(3) & "," & SP(4) & "," & hight & "," & "," & Dist & "," & Xr & "," & angle & "," & flag)
-
+                If HightDif <> NaN Then
+                    outputFile.WriteLine(SP(0) & "," & SP(1) & "," & HightDif & "," & SP(3) & "," & SP(4) & "," & hight & "," & Dist & "," & Xr & "," & angle & "," & flag)
+                End If
 
                 '↑出力は可変
             Else
