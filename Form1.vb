@@ -319,10 +319,11 @@
                 '以上平滑化処理______________________________________________________________________________________________________
 
                 If Double.IsNaN(HightDif) Then
+                    Console.WriteLine(fname & "でNaNを検出しました。")
+                Else
                     outputFile.WriteLine(SP(0) & "," & SP(1) & "," & HightDif & "," & SP(3) & "," & SP(4))
                     '& "," & hight & "," & Dist & "," & Xr & "," & angle & "," & flag)
-                Else
-                    Console.WriteLine("NaNを検出しました")
+
                 End If
 
                 '↑出力は可変
