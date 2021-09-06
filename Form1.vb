@@ -133,12 +133,18 @@
         Dim a As Long
         Dim time10 As Double
         Dim hight10 As Double
+        Dim lat10 As Double
+        Dim lon10 As Double
+        Dim pitch10 As Double
+        Dim role10 As Double
+        Dim yaw10 As Double
         Dim outputFile As Object
         outputFile = fso.OpenTextFile(TextBox2.Text & "\Modified.POS", 2, True)
         Dim TempArr() As String
 
         Dim lat As Double
-        Dim lon As Double
+        Dim lon As Double, pitch As Double, role As Double, yaw As Double
+
 
 
         With OpenFileDialog2
@@ -166,20 +172,47 @@
                     '横断平滑化に関しては使えない。ピッチと期首包囲の補間を行う必要がある。
                     '----------------------------------------------------------------------------------------------------------
                     If i <> 1 Then
+                        TempArr = SP(1).Split(New [Char]() {"N", "d", "m", "s", "E"})
+                        lat10 = CDbl(CStr(CDbl(TempArr(1)) + CDbl(TempArr(2)) / 60 + CDbl(TempArr(3)) / 60 / 60)) - lat
+
+                        TempArr = SP(2).Split(New [Char]() {"N", "d", "m", "s", "E"})
+                        lon10 = CDbl(CStr(CDbl(TempArr(1)) + CDbl(TempArr(2)) / 60 + CDbl(TempArr(3)) / 60 / 60)) - lon
+
                         time10 = CDbl(SP(0)) - time
                         hight10 = CDbl(SP(3)) - hight
+                        pitch10 = CDbl(SP(4)) - pitch
+                        role10 = CDbl(SP(5)) - role
+                        yaw10 = CDbl(SP(6)) - yaw
+
+
+
+
+
+
 
 
                         For a = 1 To 19
 
-                            outputFile.WriteLine(time + (time10 / 20) * a & " " & hight + (hight10 / 20) * a)
-                            Console.WriteLine(time + (time10 / 20) * a & " " & hight + (hight10 / 20) * a)
+                            outputFile.WriteLine(time + (time10 / 20) * a & " " & lat + (lat10 / 20) * a & " " & lon + (lon10 / 20) * a & " " & hight + (hight10 / 20) * a & " " & pitch + (pitch10 / 20) * a & " " & role + (role10 / 20) * a & " " & yaw + (yaw10 / 20) * a & " " & 0 & " " & 0 & " " & 0 & " " & 0)
+                            Console.WriteLine(time + (time10 / 20) * a & " " & lat + (lat10 / 20) * a & " " & lon + (lon10 / 20) * a & " " & hight + (hight10 / 20) * a & " " & pitch + (pitch10 / 20) * a & " " & role + (role10 / 20) * a & " " & yaw + (yaw10 / 20) * a & " " & 0 & " " & 0 & " " & 0 & " " & 0)
                         Next a
 
                     End If
 
-                    outputFile.WriteLine(SP(0) & " " & SP(3))
-                    Console.WriteLine(SP(0) & " " & SP(3))
+                    TempArr = SP(1).Split(New [Char]() {"N", "d", "m", "s", "E"})
+                    lat = CStr(CDbl(TempArr(1)) + CDbl(TempArr(2)) / 60 + CDbl(TempArr(3)) / 60 / 60)
+
+                    TempArr = SP(2).Split(New [Char]() {"N", "d", "m", "s", "E"})
+                    lon = CStr(CDbl(TempArr(1)) + CDbl(TempArr(2)) / 60 + CDbl(TempArr(3)) / 60 / 60)
+
+                    time = CDbl(SP(0))
+                    hight = CDbl(SP(3))
+                    pitch = CDbl(SP(4))
+                    role = CDbl(SP(5))
+                    yaw = CDbl(SP(6))
+
+                    outputFile.WriteLine(SP(0) & " " & lat & " " & lon & " " & SP(3) & " " & SP(4) & " " & SP(5) & " " & SP(6) & " " & 0 & " " & 0 & " " & 0 & " " & 0)
+                    Console.WriteLine(SP(0) & " " & lat & " " & lon & " " & SP(3) & " " & SP(4) & " " & SP(5) & " " & SP(6) & " " & 0 & " " & 0 & " " & 0 & " " & 0)
                     '--------------------------------------------------------------------------------------------------------
                 Else
 
@@ -196,8 +229,7 @@
 
 
 
-                time = CDbl(SP(0))
-                hight = CDbl(SP(3))
+
 
 
 
@@ -319,10 +351,11 @@
                 '以上平滑化処理______________________________________________________________________________________________________
 
                 If Double.IsNaN(HightDif) Then
+                    Console.WriteLine(fname & "でNaNを検出しました。")
+                Else
                     outputFile.WriteLine(SP(0) & "," & SP(1) & "," & HightDif & "," & SP(3) & "," & SP(4))
                     '& "," & hight & "," & Dist & "," & Xr & "," & angle & "," & flag)
-                Else
-                    Console.WriteLine(fname & "でNaNを検出しました。")
+
                 End If
 
                 '↑出力は可変
