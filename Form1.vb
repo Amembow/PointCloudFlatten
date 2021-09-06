@@ -44,7 +44,7 @@
         Dim SP1() As String
         Dim inputFile1 As Object
         Dim PArr(,) As String
-        Dim TempArr() As String
+        'Dim TempArr() As String
 
         ProgressBar1.Minimum = 0
         ProgressBar1.Maximum = count
@@ -54,8 +54,8 @@
             pos = OpenFileDialog2.FileName
             inputFile1 = fso.OpenTextFile(pos, 1, False, 0)
 
-            Dim rt = New IO.StreamReader(pos)
-            Dim LineCount1 As Integer = UBound(rt.ReadToEnd.Split(Chr(13)))
+
+            Dim LineCount1 As Integer = fso.OpenTextFile(pos, 8).Line   'UBound(rt.ReadToEnd.Split(Chr(13)))
             Console.WriteLine(LineCount1)
 
             ReDim PArr(LineCount1, 10)
@@ -143,8 +143,8 @@
 
         With OpenFileDialog2
             .Multiselect = False
-            .Title = "POSの入力"
-            .Filter = "posファイル|*.pos"
+            .Title = "走行軌跡の入力"
+            .Filter = "走行軌跡ファイル|*.dat"
         End With
 
         If OpenFileDialog2.ShowDialog() = Windows.Forms.DialogResult.OK Then
@@ -190,7 +190,7 @@
                     lon = CStr(CDbl(TempArr(1)) + CDbl(TempArr(2)) / 60 + CDbl(TempArr(3)) / 60 / 60)
 
                     outputFile.WriteLine(SP(0) & " " & lat & " " & lon & " " & SP(3) & " " & SP(4) & " " & SP(5) & " " & SP(6) & " " & SP(7) & " " & SP(8) & " " & SP(9) & " " & SP(10))
-                    Console.WriteLine(SP(0) & " " & lat & " " & lon & " " & SP(3) & " " & SP(4) & " " & SP(5) & " " & SP(6) & " " & SP(7) & " " & SP(8) & " " & SP(9) & " " & SP(10))
+                    'Console.WriteLine(SP(0) & " " & lat & " " & lon & " " & SP(3) & " " & SP(4) & " " & SP(5) & " " & SP(6) & " " & SP(7) & " " & SP(8) & " " & SP(9) & " " & SP(10))
 
                 End If
 
@@ -237,7 +237,7 @@
         Dim Xr As Double
 
 
-        inputFile = fso.OpenTextFile(TextBox3.Text & "\" & fname, 1, False, 0)　'
+        inputFile = fso.OpenTextFile(TextBox3.Text & "\" & fname, 1, False, 0)
         outputFile = fso.OpenTextFile(TextBox2.Text & "\" & fname, 2, True)
 
         lineStr = inputFile.ReadLine
@@ -318,10 +318,16 @@
                 End If
                 '以上平滑化処理______________________________________________________________________________________________________
 
-
-                outputFile.WriteLine(SP(0) & "," & SP(1) & "," & HightDif & "," & SP(3) & "," & SP(4) & "," & hight & "," & HightDif & "," & Dist & "," & Xr & "," & angle & "," & flag)
-
-
+                If CheckBox1.Checked = True Then
+                    If Double.IsNaN(HightDif) Then
+                        outputFile.WriteLine(SP(0) & "," & SP(1) & "," & HightDif & "," & SP(3) & "," & SP(4))
+                        '& "," & hight & "," & Dist & "," & Xr & "," & angle & "," & flag)
+                    Else
+                        Console.WriteLine("NaNを検出しました")
+                    End If
+                Else
+                    outputFile.WriteLine(SP(0) & "," & SP(1) & "," & hight & "," & SP(3) & "," & SP(4))
+                End If
                 '↑出力は可変
             Else
 
