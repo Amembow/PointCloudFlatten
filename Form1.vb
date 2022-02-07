@@ -129,6 +129,9 @@
         Dim SP() As String
         Dim time As Double
         Dim hight As Double
+        Dim pitch As Double
+        Dim role As Double
+        Dim yaw As Double
         Dim i As Long
         Dim a As Long
         Dim time10 As Double
@@ -139,6 +142,13 @@
 
         Dim lat As Double
         Dim lon As Double
+
+        Dim lat10 As Double
+        Dim lon10 As Double
+        Dim pitch10 As Double
+        Dim role10 As Double
+        Dim yaw10 As Double
+
 
 
         With OpenFileDialog2
@@ -166,21 +176,40 @@
                     '横断平滑化に関しては使えない。ピッチと期首包囲の補間を行う必要がある。
                     '----------------------------------------------------------------------------------------------------------
                     If i <> 1 Then
+
+                        TempArr = SP(1).Split(New [Char]() {"N", "d", "m", "s", "E"})
+                        lat10 = CStr(CDbl(TempArr(1)) + CDbl(TempArr(2)) / 60 + CDbl(TempArr(3)) / 60 / 60) - lat
+
+                        TempArr = SP(2).Split(New [Char]() {"N", "d", "m", "s", "E"})
+                        lon10 = CStr(CDbl(TempArr(1)) + CDbl(TempArr(2)) / 60 + CDbl(TempArr(3)) / 60 / 60) - lon
+
                         time10 = CDbl(SP(0)) - time
                         hight10 = CDbl(SP(3)) - hight
-
+                        pitch10 = CDbl(SP(4)) - pitch
+                        role10 = CDbl(SP(5)) - role
+                        yaw10 = CDbl(SP(6)) - yaw
 
                         For a = 1 To 19
 
-                            outputFile.WriteLine(time + (time10 / 20) * a & " " & hight + (hight10 / 20) * a)
-                            Console.WriteLine(time + (time10 / 20) * a & " " & hight + (hight10 / 20) * a)
+                            outputFile.Writeline(time + (time10 / 20) * a & " " & lat + (lat10 / 20) * a & " " & lon + (lon10 / 20) * a & " " & hight + (hight10 / 20) * a & " " & pitch + (pitch10 / 20) * a & " " & role + (role10 / 20) * a & " " & yaw + (yaw10 / 20) * a & " 0 0 0 0")
+                            'Console.WriteLine(time + (time10 / 20) * a & " " & lat + (lat10 / 20) * a & " " & lon + (lon10 / 20) * a & " " & hight + (hight10 / 20) * a & " " & pitch + (pitch10 / 20) * a & " " & role + (role10 / 20) * a & " " & yaw + (yaw10 / 20) * a & " 0 0 0 0")
                         Next a
 
                     End If
 
-                    outputFile.WriteLine(SP(0) & " " & SP(3))
-                    Console.WriteLine(SP(0) & " " & SP(3))
-                    '--------------------------------------------------------------------------------------------------------
+                    TempArr = SP(1).Split(New [Char]() {"N", "d", "m", "s", "E"})
+                    lat = CStr(CDbl(TempArr(1)) + CDbl(TempArr(2)) / 60 + CDbl(TempArr(3)) / 60 / 60)
+                    'Console.WriteLine("lat:" & lat)
+
+                    TempArr = SP(2).Split(New [Char]() {"N", "d", "m", "s", "E"})
+                    lon = CStr(CDbl(TempArr(1)) + CDbl(TempArr(2)) / 60 + CDbl(TempArr(3)) / 60 / 60)
+
+
+
+                    outputFile.Writeline(SP(0) & " " & lat & " " & lon & " " & SP(3) & " " & SP(4) & " " & SP(5) & " " & SP(6) & " 0 0 0 0")
+                    'Console.WriteLine(SP(0) & " " & lat & " " & lon & " " & SP(3) & " " & SP(4) & " " & SP(5) & " " & SP(6) & " 0 0 0 0")
+
+                    '---------------------------------------------------------
                 Else
 
                     TempArr = SP(1).Split(New [Char]() {"N", "d", "m", "s", "E"})
@@ -189,15 +218,16 @@
                     TempArr = SP(2).Split(New [Char]() {"N", "d", "m", "s", "E"})
                     lon = CStr(CDbl(TempArr(1)) + CDbl(TempArr(2)) / 60 + CDbl(TempArr(3)) / 60 / 60)
 
-                    outputFile.WriteLine(SP(0) & " " & lat & " " & lon & " " & SP(3) & " " & SP(4) & " " & SP(5) & " " & SP(6) & " " & SP(7) & " " & SP(8) & " " & SP(9) & " " & SP(10))
-                    'Console.WriteLine(SP(0) & " " & lat & " " & lon & " " & SP(3) & " " & SP(4) & " " & SP(5) & " " & SP(6) & " " & SP(7) & " " & SP(8) & " " & SP(9) & " " & SP(10))
+                    outputFile.WriteLine(SP(0) & " " & lat & " " & lon & " " & SP(3) & " " & SP(4) & " " & SP(5) & " " & SP(6) & " 0 0 0 0")
+                    'Console.WriteLine(SP(0) & " " & lat & " " & lon & " " & SP(3) & " " & SP(4) & " " & SP(5) & " " & SP(6) & " 0 0 0 0")
 
                 End If
 
-
-
                 time = CDbl(SP(0))
                 hight = CDbl(SP(3))
+                pitch = CDbl(SP(4))
+                role = CDbl(SP(5))
+                yaw = CDbl(SP(6))
 
 
 
@@ -248,12 +278,12 @@
         n = 1
         Do Until inputFile.AtEndOfStream
 
-            If CDbl(PArr(n, 0)) > CDbl(SP(4)) Then 'POSと点群CSVのGPSTimeを比較、POSのGPSTimeの方が大きい場合のみ処理を行う
+            If CDbl(PArr(n, 0)) > CDbl(SP(4)) Then 'POS(PArr)と点群CSV(SP)のGPSTimeを比較、POSのGPSTimeの方が大きい場合のみ処理を行う
 
                 lineStr = inputFile.ReadLine
                 SP = lineStr.Split(",")
 
-                hight = CDbl(SP(2)) - CDbl(PArr(n, 3)) + 2.036
+                hight = CDbl(SP(2)) - CDbl(PArr(n, 3)) + CDbl(TextBox4.Text)
 
                 '２点を通る１次方程式の求め方
                 '点(x1,y1)と点(x2,y2)を通る直線の１次方程式は
@@ -282,13 +312,13 @@
                     y = calc_y(PArr(n, 1), PArr(n, 2), Sys) - CDbl(SP(1))
 
                     Dist = Math.Sqrt(x ^ 2 + y ^ 2)
+                    Console.WriteLine("Dist:" & Dist)
 
                     Xr = Math.Abs(a * CDbl(SP(1)) + b * CDbl(SP(0)) + c) / Math.Sqrt(a ^ 2 + b ^ 2)
+                    Console.WriteLine("Xr:" & Xr)
 
                     angle = PArr(n, 4)
-
-
-
+                    'Console.WriteLine("angle:" & angle)
 
                     'アフィン変換Ver""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -310,20 +340,20 @@
                         End If
                     End If
 
-
-
+                    Console.WriteLine("hightdif:" & HightDif)
                     '""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
 
                 End If
                 '以上平滑化処理______________________________________________________________________________________________________
 
                 If CheckBox1.Checked = True Then
                     If Double.IsNaN(HightDif) Then
+                        Console.WriteLine("NaNを検出しました")
+
+                    Else
                         outputFile.WriteLine(SP(0) & "," & SP(1) & "," & HightDif & "," & SP(3) & "," & SP(4))
                         '& "," & hight & "," & Dist & "," & Xr & "," & angle & "," & flag)
-                    Else
-                        Console.WriteLine("NaNを検出しました")
+
                     End If
                 Else
                     outputFile.WriteLine(SP(0) & "," & SP(1) & "," & hight & "," & SP(3) & "," & SP(4))
@@ -331,7 +361,7 @@
                 '↑出力は可変
             Else
 
-                    n = n + 1
+                n = n + 1
 
             End If
 
